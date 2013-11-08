@@ -1,0 +1,15 @@
+.flot-tooltip {
+	position: absolute;
+	display: none;
+	border: 1px solid #000;
+	background-color: #FFF;
+	padding: 2px 8px;
+	color: #232323;
+	border-radius: 4px;
+	white-space: nowrap;
+	overflow-y: auto;
+	overflow-x: hidden;
+	max-height: 400px;
+	max-width: 230px;
+	z-index: 101;
+}

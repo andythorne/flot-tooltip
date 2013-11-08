@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="ISO-8859-1">
+		<title>Flot Tooltip Example</title>
+		
+        <script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+        
+	    <script type="text/javascript" src="../js/jquery.flot.js"></script>
+		<script type="text/javascript" src="../js/jquery.flot.crosshair.js"></script>
+		
+		<script type="text/javascript" src="../jquery.flot.tooltip.js"></script>
+		
+		<script type="text/javascript">
+			var plot;
+			$(document).ready(function(){
+
+				var sin = [],
+					cos = [];
+
+				for (var i = 0; i < 14; i += 0.5) {
+					sin.push([i, Math.sin(i)]);
+					cos.push([i, Math.cos(i)]);
+				}
+				
+				plot = $.plot(
+		    	    $('#graph'),
+			        [
+			         	{ data: sin, label: "sin(x)"},
+						{ data: cos, label: "cos(x)"}
+			        ],
+			        {
+		    	    	series: {
+		    	    		lines: { 
+		    	    			show: true, 
+		    	    	        lineWidth: 2
+		    	    		},
+		    	    		points: { 
+		    	    			show: false,
+		    	    		},
+		    	    		shadowSize: 0
+		    	    	},
+						crosshair: {
+							mode: "x"
+						},
+						grid: { 
+							hoverable: true, 
+							clickable: true, 
+							borderWidth:0,
+							mouseActiveRadius: 1000,
+							autoHighlight: true,
+						},
+						yaxis: { 
+							min: -1.2,
+							max: 1.2
+						},
+						colors: ["#fa3031", "#43c83c"],
+						tooltip: {
+							animate: true,
+		            	   	element: {
+		            	   		position: 'point',
+		       					attach: ['bottom', 'center'], // options: [ center|top|bottom, center|left|right ]
+		            	   	},
+		            	   	formatTooltip: function( dataPoints ){ 
+		        				var content = [];
+		        				for( var i=0 ; i<dataPoints.length ; i++ ){
+		        					content.push("<span style='color:" + dataPoints[i].series.color + ";'>" + dataPoints[i].series.label + "</span>: " + dataPoints[i].point[1].toFixed(2));
+		        				}
+		        				return content.join('<br/>'); 
+		        			},
+						}
+			        }
+		    	);
+				
+
+
+			    $("#graph").bind("plothover", function (event, pos, item) {
+			    	
+					if ( item ) {
+						// Lock the crosshair to the data point being hovered
+						plot.lockCrosshair({
+							x: item.datapoint[ 0 ],
+							y: item.datapoint[ 1 ]
+						});
+					} else {
+						// Return normal crosshair operation
+						plot.unlockCrosshair();
+					}
+			    }); 
+			});
+		</script>
+		
+   		<link href="../flot.tooltip.css" rel="stylesheet" type="text/css" />
+		<style type="text/css">
+			#graph {
+				width: 800px;
+				height: 400px;
+			}
+		</style>
+		
+	</head>
+	<body>
+		<div id="graph">
+		
+		</div>
+	</body>
+</html>
