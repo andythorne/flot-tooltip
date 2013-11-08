@@ -9,38 +9,37 @@
 	// plugin options, default values
 	var defaultOptions = {
 		tooltip: {
-			enabled: true,
-			
-			shared:  true,
-			element: {
-				id: '',
-				classes: ['flot-tooltip'],
-				position: 'point', // options: mouse|point|fixed
-				attach: ['bottom', 'right'], // options: [ center|top|bottom, center|left|right ]
-			},
-			animate: true,
-			
+		    enabled: true,                          // true|false
+		    shared:  true,                          // if true, tooltip will display all y values for the selected x
+		    element: {
+		        id: '',                             // id of the tooltip (this is set per graph)
+		        classes: ['flot-tooltip'],          // class of the tooltip
+		        position: 'point',                  // where the tooltip will appear. options: point|fixed
+		        attach: ['bottom', 'right'],        // where the tooptip will be attached to. options: [ center|top|bottom, center|left|right ]
+		    },
+		    animate: false,                         // if true, try and animate (TODO: This is buggy)
+		    offset: {                               // offset that will be applied to each tooltip
+		        x: 20,
+		        y: 20
+		    },
 
-			formatTooltip: function( dataPoints ){ 
-				var content = [];
-				for( var i=0 ; i<dataPoints.length ; i++ ){
-					content.push("<span style='color:" + dataPoints[i].series.color + ";'>" + dataPoints[i].series.label + "</span>: " + dataPoints[i].point[1]);
-				}
-				return content.join('<br/>'); 
-			},
-			positionTooltip: function( position ){ },
-			
-			// cursor offset
-			offset: {
-				x: 20,
-				y: 20
-			},
+		    // function to format the tooltip. Arguments are and array of objects containing 'series' and 'ponint' data
+		    formatTooltip: function( dataPoints ){  
+		        var content = [];
+		        for( var i=0 ; i<dataPoints.length ; i++ ){
+		            content.push("<span style='color:" + dataPoints[i].series.color + ";'>" + dataPoints[i].series.label + "</span>: " + dataPoints[i].point[1]);
+		        }
+		        return content.join('<br/>'); 
+		    },
 
-			// callbacks
-			events: {
-				hover: function(flotItem, $tooltipEl) {}
-			}
-			
+		    // function to modify the positioning. position has properties 'top', 'left', 'bottom' and 'right'
+		    positionTooltip: function( position ){ },
+
+		    // events
+		    events: {
+		        // function to call on hover
+		        hover: function(flotItem, $tooltipEl) {} 
+		    }
 		}
 	};
 
@@ -88,7 +87,9 @@
 
 			/* bind events */
 			$( plot.getPlaceholder() ).bind("plothover", plothover);
+			$( plot.getPlaceholder() ).bind("mouseleave", hideTooltip);
 			$( eventHolder ).bind('mousemove', mouseMove);
+            $( eventHolder ).bind("mouseleave", hideTooltip);
  
 		});
 		
@@ -98,7 +99,9 @@
 		 */
 		plot.hooks.shutdown.push(function (plot, eventHolder){
 			$(plot.getPlaceholder()).unbind("plothover", plothover);
+			$(plot.getPlaceholder()).unbind("mouseleave", hideTooltip);
             $(eventHolder).unbind("mousemove", mouseMove);
+            $(eventHolder).unbind("mouseleave", hideTooltip);
 		});
 		
 		
@@ -115,11 +118,10 @@
 			 */
 			if (item || (that.tip && event.target == plot.getPlaceholder()[0])) {
 				
-				console.log(event.target);
 				if(!item && that.previousPoint !== null){
 					that.update( that.previousPoint );
 				} else if (that.previousPoint === null || that.previousPoint.dataIndex != item.dataIndex || that.previousPoint.seriesIndex != item.seriesIndex) {
-					/* Check of the current point has changed */
+					/* Check if the current point has changed */
 					that.previousPoint = item;
 					that.update( item );
 				}
@@ -140,6 +142,26 @@
 			if(that.tip && event.target == event.target == plot.getPlaceholder()[0])
 				return;
 			that.updatePosition();
+			
+			/* If we are outside the graph, hide the tooltip */
+			var offset = $(this).offset().left - plot.getPlaceholder().offset().left,
+				margin = 0
+			;
+			if(typeof that.plotOptions.grid.margin.left != 'undefined'){
+				margin += that.plotOptions.grid.margin.left;
+			}
+			if(typeof that.plotOptions.grid.margin.right != 'undefined'){
+				margin += that.plotOptions.grid.margin.right;
+			}
+			
+			if(event.offsetX + offset - (that.tooltipOptions.offset.x / 2) >  that.plot.getPlaceholder().width() - margin){
+				hideTooltip();
+			}
+		}
+		
+		function hideTooltip(event){
+			that.tip.hide();
+			that.plot.unhighlight();
 		}
 	};
 
@@ -173,6 +195,9 @@
 	 */
 	FlotTooltip.prototype.update = function( item ) {
 		
+		if(!item)
+			return;
+		
 		var dataPoints 	= [],
 			dataX 		= item.datapoint[0],
 			dataY 		= item.datapoint[1],
@@ -182,7 +207,7 @@
 		
 		/* Loop around all the data in the graph and try to find other plots for this x value */
 		points = this.plot.getData();
-	    plot.unhighlight();
+	    this.plot.unhighlight();
 		for(var k = 0; k < points.length; k++){
 			 for(var m = 0; m < points[k].data.length; m++){
 				 if(points[k].data[m][0] == dataX){
