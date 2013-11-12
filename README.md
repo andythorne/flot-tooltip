@@ -19,6 +19,7 @@ Default Config
 			x: 20,
 			y: 20
 		},
+		locakable: true,						// if true, a lcik will lock the tooltip until clicked again
 		
 		// function to format the tooltip. Arguments are and array of objects containing 'series' and 'ponint' data
 		formatTooltip: function( dataPoints ){	

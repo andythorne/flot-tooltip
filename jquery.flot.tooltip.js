@@ -52,6 +52,7 @@
 		this.tooltipOptions = {};
 		this.previousPoint = null;
 		
+		this.locked = false;
 		this.tip = null;
 		this.tipPosition = {
 			top: 'inherit',
@@ -90,7 +91,7 @@
 			$( plot.getPlaceholder() ).bind("mouseleave", hideTooltip);
 			$( eventHolder ).bind('mousemove', mouseMove);
             $( eventHolder ).bind("mouseleave", hideTooltip);
- 
+            $( plot.getPlaceholder() ).bind("plotclick", plotClick);
 		});
 		
 		
@@ -102,6 +103,7 @@
 			$(plot.getPlaceholder()).unbind("mouseleave", hideTooltip);
             $(eventHolder).unbind("mousemove", mouseMove);
             $(eventHolder).unbind("mouseleave", hideTooltip);
+            $(plot.getPlaceholder()).unbind("plotclick", plotClick);
 		});
 		
 		
@@ -110,6 +112,8 @@
 		 */
 		function plothover(event, pos, item) {
 
+			if(that.locked)
+				return;
 			/* 
 			 * check if we have selected a point, or if the current mouseover target 
 			 * is the tooltip, in which case we should ignore it and display the last
@@ -139,7 +143,7 @@
 		
 		function mouseMove(event){
 			
-			if(that.tip && event.target == event.target == plot.getPlaceholder()[0])
+			if((that.tip && event.target == event.target == plot.getPlaceholder()[0]) || that.locked)
 				return;
 			that.updatePosition();
 			
@@ -160,9 +164,18 @@
 		}
 		
 		function hideTooltip(event){
+			if(that.locked)
+				return;
 			that.tip.hide();
 			that.plot.unhighlight();
 		}
+		
+		function plotClick(event, pos, item) {
+            if (item) {
+            	that.locked = !that.locked;
+            	that.plot.highlight(item.series, item.datapoint);
+            }
+        }
 	};
 
 	/**
@@ -195,7 +208,7 @@
 	 */
 	FlotTooltip.prototype.update = function( item ) {
 		
-		if(!item)
+		if(!item || this.locked)
 			return;
 		
 		var dataPoints 	= [],
@@ -209,6 +222,9 @@
 		points = this.plot.getData();
 	    this.plot.unhighlight();
 		for(var k = 0; k < points.length; k++){
+			if(!points[k].lines.show)
+				continue;
+			
 			 for(var m = 0; m < points[k].data.length; m++){
 				 if(points[k].data[m][0] == dataX){
 					 // there is another data point on this x axis!
@@ -300,7 +316,7 @@
 		init: init,
 		options: defaultOptions,
 		name: 'tooltip',
-		version: '0.0.1'
+		version: '0.0.2'
 	});
 
 })(jQuery);
